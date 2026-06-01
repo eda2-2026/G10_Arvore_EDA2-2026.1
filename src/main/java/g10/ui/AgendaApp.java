@@ -122,6 +122,9 @@ public class AgendaApp extends Application {
         TextField inicioField = new TextField("08:00");
         TextField fimField = new TextField("09:00");
         TextField responsavelField = new TextField();
+        responsavelField.setPromptText("Nome do responsável");
+        inicioField.setPromptText("HH:mm");
+        fimField.setPromptText("HH:mm");
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -141,6 +144,26 @@ public class AgendaApp extends Application {
 
         dialogo.getDialogPane().setContent(grid);
 
+        Button botaoSalvarDialogo = (Button) dialogo.getDialogPane().lookupButton(botaoSalvar);
+        botaoSalvarDialogo.setDisable(true);
+
+        Runnable atualizarSalvar = () -> {
+            boolean valido = salaDialog.getValue() != null
+                    && dataDialog.getValue() != null
+                    && responsavelField.getText() != null && !responsavelField.getText().isBlank()
+                    && inicioField.getText() != null && !inicioField.getText().isBlank()
+                    && fimField.getText() != null && !fimField.getText().isBlank();
+            botaoSalvarDialogo.setDisable(!valido);
+        };
+
+        salaDialog.valueProperty().addListener((obs, oldVal, newVal) -> atualizarSalvar.run());
+        dataDialog.valueProperty().addListener((obs, oldVal, newVal) -> atualizarSalvar.run());
+        inicioField.textProperty().addListener((obs, oldVal, newVal) -> atualizarSalvar.run());
+        fimField.textProperty().addListener((obs, oldVal, newVal) -> atualizarSalvar.run());
+        responsavelField.textProperty().addListener((obs, oldVal, newVal) -> atualizarSalvar.run());
+
+        atualizarSalvar.run();
+
         dialogo.setResultConverter(dialogButton -> dialogButton);
         dialogo.showAndWait().ifPresent(result -> {
             if (result == botaoSalvar) {
@@ -156,6 +179,7 @@ public class AgendaApp extends Application {
                     }
 
                     agenda.adicionar(sala, data, new Intervalo(inicio, fim), responsavel);
+                    mostrarAlerta(Alert.AlertType.INFORMATION, "Reserva criada", "Reserva adicionada com sucesso.");
                     carregarReservas();
                 } catch (ConflitoDeHorarioException ex) {
                     mostrarAlerta(Alert.AlertType.ERROR, "Conflito de horário", ex.getMessage());
