@@ -10,6 +10,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -18,13 +20,16 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
@@ -73,41 +78,86 @@ public class AgendaApp extends Application {
         Button botaoAtualizar = new Button("Atualizar lista");
         botaoAtualizar.setOnAction(e -> carregarReservas());
 
+        Button botaoMostrarTodas = new Button("Mostrar todas");
+        botaoMostrarTodas.setOnAction(e -> carregarTodasReservas());
+
         HBox topo = new HBox(10,
                 new Label("Sala:"), salaCombo,
                 new Label("Data:"), dataPicker,
-                botaoNova, botaoNovaSala, botaoRemover, botaoAtualizar);
+                botaoNova, botaoNovaSala, botaoMostrarTodas, botaoRemover, botaoAtualizar);
         topo.setPadding(new Insets(10));
+
+        Menu menuArquivo = new Menu("Arquivo");
+        MenuItem sairItem = new MenuItem("Sair");
+        sairItem.setOnAction(e -> stage.close());
+        menuArquivo.getItems().add(sairItem);
+
+        Menu menuAjuda = new Menu("Ajuda");
+        MenuItem sobreItem = new MenuItem("Sobre");
+        sobreItem.setOnAction(e -> mostrarSobre());
+        menuAjuda.getItems().add(sobreItem);
+
+        MenuBar menuBar = new MenuBar(menuArquivo, menuAjuda);
 
         tabelaReservas = new TableView<>(reservasVisiveis);
         tabelaReservas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tabelaReservas.setPlaceholder(new Label("Nenhuma reserva para esta sala/data."));
+        tabelaReservas.setPlaceholder(new Label("Nenhuma reserva exibida."));
         tabelaReservas.getColumns().addAll(
-                criarColuna("ID", "id", 60),
-                criarColuna("Horário", "intervalo", 140),
-                criarColuna("Sala", "sala", 120),
-                criarColuna("Responsável", "responsavel", 200)
+                criarColunaId(),
+                criarColunaData(),
+                criarColunaHorario(),
+                criarColunaSala(),
+                criarColunaResponsavel()
         );
 
         statusLabel = new Label("Selecione sala e data para ver reservas.");
         statusLabel.setPadding(new Insets(10));
 
         BorderPane raiz = new BorderPane();
-        raiz.setTop(topo);
+        VBox topoContainer = new VBox(menuBar, topo);
+        raiz.setTop(topoContainer);
         raiz.setCenter(tabelaReservas);
         raiz.setBottom(statusLabel);
 
-        Scene cena = new Scene(raiz, 760, 480);
+        Scene cena = new Scene(raiz, 820, 520);
         stage.setScene(cena);
         stage.show();
 
         carregarReservas();
     }
 
-    private TableColumn<Reserva, ?> criarColuna(String titulo, String propriedade, int largura) {
-        TableColumn<Reserva, ?> coluna = new TableColumn<>(titulo);
-        coluna.setCellValueFactory(new PropertyValueFactory<>(propriedade));
-        coluna.setMinWidth(largura);
+    private TableColumn<Reserva, Long> criarColunaId() {
+        TableColumn<Reserva, Long> coluna = new TableColumn<>("ID");
+        coluna.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getId()));
+        coluna.setMinWidth(60);
+        return coluna;
+    }
+
+    private TableColumn<Reserva, String> criarColunaData() {
+        TableColumn<Reserva, String> coluna = new TableColumn<>("Data");
+        coluna.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getData().toString()));
+        coluna.setMinWidth(100);
+        return coluna;
+    }
+
+    private TableColumn<Reserva, String> criarColunaHorario() {
+        TableColumn<Reserva, String> coluna = new TableColumn<>("Horário");
+        coluna.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getIntervalo().toString()));
+        coluna.setMinWidth(140);
+        return coluna;
+    }
+
+    private TableColumn<Reserva, String> criarColunaSala() {
+        TableColumn<Reserva, String> coluna = new TableColumn<>("Sala");
+        coluna.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getSala().getNome()));
+        coluna.setMinWidth(120);
+        return coluna;
+    }
+
+    private TableColumn<Reserva, String> criarColunaResponsavel() {
+        TableColumn<Reserva, String> coluna = new TableColumn<>("Responsável");
+        coluna.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getResponsavel()));
+        coluna.setMinWidth(200);
         return coluna;
     }
 
@@ -284,6 +334,23 @@ public class AgendaApp extends Application {
         setStatus(reservas.isEmpty()
                 ? "Nenhuma reserva encontrada para " + sala.getNome() + " em " + data + "."
                 : "Mostrando " + reservas.size() + " reserva(s) para " + sala.getNome() + " em " + data + ".");
+    }
+
+    private void carregarTodasReservas() {
+        List<Reserva> reservas = agenda.listarTodasReservas();
+        reservasVisiveis.setAll(reservas);
+        setStatus(reservas.isEmpty()
+                ? "Nenhuma reserva encontrada no sistema."
+                : "Mostrando todas as reservas cadastradas (" + reservas.size() + ").");
+    }
+
+    private void mostrarSobre() {
+        mostrarAlerta(Alert.AlertType.INFORMATION, "Sobre",
+                "Agendador de salas com árvore rubro-negra\n"
+                        + "Interface JavaFX para cadastrar salas, adicionar reservas\n"
+                        + "e visualizar conflitos de horário.\n\n"
+                        + "A estrutura de dados central é uma ArvoreRubroNegra genérica "
+                        + "que ordena reservas por horário de início.");
     }
 
     private void setStatus(String texto) {
