@@ -88,5 +88,3 @@ mvn -q test
 5. Clique em `Salvar`.
 6. Se houver conflito de horário, a UI exibirá uma mensagem de erro.
 7. Para remover, selecione uma reserva e clique em `Remover selecionada`.
-
-##
