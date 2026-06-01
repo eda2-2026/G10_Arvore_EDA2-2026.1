@@ -39,6 +39,7 @@ public class AgendaApp extends Application {
     private DatePicker dataPicker;
     private TableView<Reserva> tabelaReservas;
     private final ObservableList<Reserva> reservasVisiveis = FXCollections.observableArrayList();
+    private Label statusLabel;
 
     @Override
     public void init() {
@@ -88,11 +89,15 @@ public class AgendaApp extends Application {
                 criarColuna("Responsável", "responsavel", 200)
         );
 
+        statusLabel = new Label("Selecione sala e data para ver reservas.");
+        statusLabel.setPadding(new Insets(10));
+
         BorderPane raiz = new BorderPane();
         raiz.setTop(topo);
         raiz.setCenter(tabelaReservas);
+        raiz.setBottom(statusLabel);
 
-        Scene cena = new Scene(raiz, 760, 440);
+        Scene cena = new Scene(raiz, 760, 480);
         stage.setScene(cena);
         stage.show();
 
@@ -180,11 +185,14 @@ public class AgendaApp extends Application {
 
                     agenda.adicionar(sala, data, new Intervalo(inicio, fim), responsavel);
                     mostrarAlerta(Alert.AlertType.INFORMATION, "Reserva criada", "Reserva adicionada com sucesso.");
+                    setStatus("Reserva adicionada: " + responsavel + " em " + sala.getNome() + " às " + inicio);
                     carregarReservas();
                 } catch (ConflitoDeHorarioException ex) {
                     mostrarAlerta(Alert.AlertType.ERROR, "Conflito de horário", ex.getMessage());
+                    setStatus("Conflito detectado: reserva não adicionada.");
                 } catch (IllegalArgumentException ex) {
                     mostrarAlerta(Alert.AlertType.WARNING, "Dados inválidos", ex.getMessage());
+                    setStatus("Erro: " + ex.getMessage());
                 }
             }
         });
@@ -268,9 +276,20 @@ public class AgendaApp extends Application {
         LocalDate data = dataPicker.getValue();
         if (sala == null || data == null) {
             reservasVisiveis.setAll(List.of());
+            setStatus("Selecione sala e data para ver reservas.");
             return;
         }
-        reservasVisiveis.setAll(agenda.listarPorSalaEData(sala, data));
+        List<Reserva> reservas = agenda.listarPorSalaEData(sala, data);
+        reservasVisiveis.setAll(reservas);
+        setStatus(reservas.isEmpty()
+                ? "Nenhuma reserva encontrada para " + sala.getNome() + " em " + data + "."
+                : "Mostrando " + reservas.size() + " reserva(s) para " + sala.getNome() + " em " + data + ".");
+    }
+
+    private void setStatus(String texto) {
+        if (statusLabel != null) {
+            statusLabel.setText(texto);
+        }
     }
 
     private void mostrarAlerta(Alert.AlertType tipo, String titulo, String conteudo) {
