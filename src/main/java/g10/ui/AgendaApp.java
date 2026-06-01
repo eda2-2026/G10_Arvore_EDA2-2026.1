@@ -63,6 +63,9 @@ public class AgendaApp extends Application {
         Button botaoNova = new Button("+ Nova reserva");
         botaoNova.setOnAction(e -> abrirDialogoNovaReserva());
 
+        Button botaoNovaSala = new Button("+ Nova sala");
+        botaoNovaSala.setOnAction(e -> abrirDialogoCadastrarSala());
+
         Button botaoRemover = new Button("Remover selecionada");
         botaoRemover.setOnAction(e -> removerReservaSelecionada());
 
@@ -72,11 +75,12 @@ public class AgendaApp extends Application {
         HBox topo = new HBox(10,
                 new Label("Sala:"), salaCombo,
                 new Label("Data:"), dataPicker,
-                botaoNova, botaoRemover, botaoAtualizar);
+                botaoNova, botaoNovaSala, botaoRemover, botaoAtualizar);
         topo.setPadding(new Insets(10));
 
         tabelaReservas = new TableView<>(reservasVisiveis);
         tabelaReservas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabelaReservas.setPlaceholder(new Label("Nenhuma reserva para esta sala/data."));
         tabelaReservas.getColumns().addAll(
                 criarColuna("ID", "id", 60),
                 criarColuna("Horário", "intervalo", 140),
@@ -186,6 +190,53 @@ public class AgendaApp extends Application {
         } else {
             mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível remover a reserva selecionada.");
         }
+    }
+
+    private void abrirDialogoCadastrarSala() {
+        Dialog<ButtonType> dialogo = new Dialog<>();
+        dialogo.setTitle("Cadastrar sala");
+        dialogo.setHeaderText("Informe o nome e a capacidade da nova sala");
+
+        ButtonType botaoSalvar = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
+        dialogo.getDialogPane().getButtonTypes().addAll(botaoSalvar, ButtonType.CANCEL);
+
+        TextField nomeField = new TextField();
+        TextField capacidadeField = new TextField();
+        capacidadeField.setPromptText("Opcional");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        grid.add(new Label("Nome da sala:"), 0, 0);
+        grid.add(nomeField, 1, 0);
+        grid.add(new Label("Capacidade:"), 0, 1);
+        grid.add(capacidadeField, 1, 1);
+
+        dialogo.getDialogPane().setContent(grid);
+
+        dialogo.setResultConverter(dialogButton -> dialogButton);
+        dialogo.showAndWait().ifPresent(result -> {
+            if (result == botaoSalvar) {
+                try {
+                    String nome = nomeField.getText();
+                    int capacidade = 0;
+                    if (capacidadeField.getText() != null && !capacidadeField.getText().isBlank()) {
+                        capacidade = Integer.parseInt(capacidadeField.getText().trim());
+                    }
+                    Sala sala = new Sala(nome, capacidade);
+                    agenda.cadastrarSala(sala);
+                    salaCombo.getItems().add(sala);
+                    salaCombo.getSelectionModel().select(sala);
+                    carregarReservas();
+                } catch (NumberFormatException ex) {
+                    mostrarAlerta(Alert.AlertType.WARNING, "Capacidade inválida", "Digite um número inteiro para a capacidade.");
+                } catch (IllegalArgumentException ex) {
+                    mostrarAlerta(Alert.AlertType.WARNING, "Dados inválidos", ex.getMessage());
+                }
+            }
+        });
     }
 
     private void carregarReservas() {
