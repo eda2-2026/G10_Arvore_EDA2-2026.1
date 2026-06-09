@@ -46,7 +46,9 @@ Link da apresentação: [Árvore - G10]()
 - Estrutura de dados genérica `ArvoreRubroNegra` isolada da lógica do domínio.
 
 ## Screenshots
-Adicione 3 ou mais screenshots do projeto em funcionamento aqui.
+<img width="1919" height="1019" alt="image" src="https://github.com/user-attachments/assets/d0c566d2-fe59-45e6-a9e7-af79c86fd560" />
+<img width="602" height="409" alt="image" src="https://github.com/user-attachments/assets/acf84652-fc51-443f-885a-b4778e1ad82e" />
+<img width="505" height="272" alt="image" src="https://github.com/user-attachments/assets/c741aef4-cabb-4b93-a4bb-9c71e7a212e0" />
 
 ## Instalação
 
